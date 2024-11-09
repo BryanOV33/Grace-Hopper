@@ -1,0 +1,21 @@
+Arduino UNO
+
+Placa protoboard
+
+Módulo Relé 4 Canales
+
+2 bombas
+
+Motor DC
+
+Servo
+
+Fuente de voltaje
+
+Cables macho a macho
+
+Cables macho a hembra
+
+Cables hembra a hembra
+
+Botones
