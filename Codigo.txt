@@ -1,0 +1,182 @@
+#include <Servo.h>
+
+// Pines de los botones
+const int Pin2 = 2;  // Botón de subida para la bomba 1
+const int Pin3 = 3;  // Botón de bajada para la bomba 1
+const int Pin4 = 4;  // Botón de inicio para ambas bombas
+const int Pin5 = 5;  // Botón de subida para la bomba 2
+const int Pin6 = 6;  // Botón de bajada para la bomba 2
+const int Pin7 = 7;  // Botón de subida para el tiempo en la posición 0° del servo
+const int Pin8 = 8;  // Botón de bajada para el tiempo en la posición 0° del servo
+
+// Pines de los relés que controlan las bombas
+const int relayPin1 = 13;      // Relé de la bomba 1
+const int relayPin2 = 12;      // Relé de la bomba 2
+
+// Pin para el relé del motor DC
+const int relayMotorPin = 10;  // Relé del motor DC
+
+// Configuración del servomotor
+Servo myServo;
+const int servoPin = 9;        // Pin para el control del servo
+
+// Variables de nivel y estado de los botones
+int level1 = 0;                // Nivel para bomba 1
+int level2 = 0;                // Nivel para bomba 2
+int time0 = 2;                 // Tiempo en la posición 0° del servo, escala 1-5 segundos
+int lastPin2 = LOW;
+int lastPin3 = LOW;
+int lastPin4 = LOW;
+int lastPin5 = LOW;
+int lastPin6 = LOW;
+int lastPin7 = LOW;
+int lastPin8 = LOW;
+
+void setup() {
+  // Configuración de los pines de entrada para los botones
+  pinMode(Pin2, INPUT_PULLUP);
+  pinMode(Pin3, INPUT_PULLUP);
+  pinMode(Pin4, INPUT_PULLUP);
+  pinMode(Pin5, INPUT_PULLUP);
+  pinMode(Pin6, INPUT_PULLUP);
+  pinMode(Pin7, INPUT_PULLUP);
+  pinMode(Pin8, INPUT_PULLUP);
+
+  // Configuración de los pines de salida para los relés
+  pinMode(relayPin1, OUTPUT);
+  pinMode(relayPin2, OUTPUT);
+  pinMode(relayMotorPin, OUTPUT);
+
+  // Configuración del servomotor
+  myServo.attach(servoPin);
+
+  // Asegura que las bombas y el motor estén apagados al iniciar
+  digitalWrite(relayPin1, HIGH);
+  digitalWrite(relayPin2, HIGH);
+  digitalWrite(relayMotorPin, HIGH); // Relé del motor apagado (HIGH = apagado)
+
+  Serial.begin(9600);
+  Serial.println("Nivel inicial de bomba 1: " + String(level1));
+  Serial.println("Nivel inicial de bomba 2: " + String(level2));
+  Serial.println("Tiempo inicial en posición 0° del servo: " + String(time0));
+}
+
+void loop() {
+  // Lectura de los estados de los botones
+  int Pin2S = digitalRead(Pin2);
+  int Pin3S = digitalRead(Pin3);
+  int Pin4S = digitalRead(Pin4);
+  int Pin5S = digitalRead(Pin5);
+  int Pin6S = digitalRead(Pin6);
+  int Pin7S = digitalRead(Pin7);
+  int Pin8S = digitalRead(Pin8);
+
+  // Control del botón de subida para la bomba 1
+  if (Pin2S == LOW && lastPin2 == HIGH) {
+    if (level1 < 5) {
+      level1++;
+      Serial.println("Nivel actual de bomba 1: " + String(level1));
+    }
+  }
+
+  // Control del botón de bajada para la bomba 1
+  if (Pin3S == LOW && lastPin3 == HIGH) {
+    if (level1 > 0) {
+      level1--;
+      Serial.println("Nivel actual de bomba 1: " + String(level1));
+    }
+  }
+
+  // Control del botón de subida para la bomba 2
+  if (Pin5S == LOW && lastPin5 == HIGH) {
+    if (level2 < 5) {
+      level2++;
+      Serial.println("Nivel actual de bomba 2: " + String(level2));
+    }
+  }
+
+  // Control del botón de bajada para la bomba 2
+  if (Pin6S == LOW && lastPin6 == HIGH) {
+    if (level2 > 0) {
+      level2--;
+      Serial.println("Nivel actual de bomba 2: " + String(level2));
+    }
+  }
+
+  // Control de los botones para ajustar el tiempo en la posición 0° del servo
+  if (Pin7S == LOW && lastPin7 == HIGH) {
+    if (time0 < 5) {
+      time0++;
+      Serial.println("Tiempo en posición 0° del servo: " + String(time0) + " segundos");
+    }
+  }
+  if (Pin8S == LOW && lastPin8 == HIGH) {
+    if (time0 > 1) {
+      time0--;
+      Serial.println("Tiempo en posición 0° del servo: " + String(time0) + " segundos");
+    }
+  }
+
+  // Control del botón de inicio para ambas bombas
+  if (Pin4S == LOW && lastPin4 == HIGH) {
+    if (level1 > 0 || level2 > 0) {
+      Serial.println("Activando bombas...");
+      
+      if (level1 > 0) {
+        Serial.println("Bomba 1 activada por " + String(level1) + " segundo(s)");
+        digitalWrite(relayPin1, LOW);
+      }
+      if (level2 > 0) {
+        Serial.println("Bomba 2 activada por " + String(level2) + " segundo(s)");
+        digitalWrite(relayPin2, LOW);
+      }
+
+      // Espera el tiempo máximo de funcionamiento entre ambas bombas
+      delay(max(level1, level2) * 1000);
+
+      // Apaga ambas bombas
+      digitalWrite(relayPin1, HIGH);
+      digitalWrite(relayPin2, HIGH);
+      Serial.println("Bombas apagadas");
+
+      // Activa el relé del motor DC por 15 segundos después de apagar las bombas
+      delay(1000); // Breve pausa antes de activar el motor
+      Serial.println("Activando motor DC por 15 segundos");
+      digitalWrite(relayMotorPin, LOW);   // Enciende el motor
+      delay(15000);
+      digitalWrite(relayMotorPin, HIGH);  // Apaga el motor
+      Serial.println("Motor DC apagado");
+
+      // Control del servomotor en sus posiciones
+      Serial.println("Moviendo servomotor a posición 0°");
+      myServo.write(0);
+      delay(time0 * 1000);
+
+      Serial.println("Moviendo servomotor a posición 90°");
+      myServo.write(90);
+      delay(3000);
+
+      Serial.println("Moviendo servomotor a posición 180°");
+      myServo.write(180);
+      delay(3000);
+
+      // Volver a la posición 90°
+      Serial.println("Moviendo servomotor de vuelta a posición 90°");
+      myServo.write(90);
+      delay(3000);
+
+      Serial.println("Movimiento del servomotor finalizado");
+    }
+  }
+
+  // Actualiza los estados previos de los botones
+  lastPin2 = Pin2S;
+  lastPin3 = Pin3S;
+  lastPin4 = Pin4S;
+  lastPin5 = Pin5S;
+  lastPin6 = Pin6S;
+  lastPin7 = Pin7S;
+  lastPin8 = Pin8S;
+
+  delay(50);  // Antirrebote para los botones
+}
