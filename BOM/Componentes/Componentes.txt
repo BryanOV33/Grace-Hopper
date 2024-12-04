@@ -2,6 +2,8 @@ Arduino UNO
 
 Placa protoboard
 
+Placa PCB
+
 Módulo Relé 4 Canales
 
 2 bombas
@@ -18,4 +20,4 @@ Cables macho a hembra
 
 Cables hembra a hembra
 
-Botones
+Botón
